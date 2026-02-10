@@ -7,33 +7,6 @@ from ..interfaces.classify import IEmailPayload, IClassificationResult, ISendEma
 
 router = APIRouter()
 
-class EmailPayload(BaseModel, IEmailPayload):
-    id: str
-    threadId: str
-    subject: str
-    from_: str
-    date: str
-    snippet: str
-    content: str
-
-    class Config:
-        fields = {
-            "from_": "from"
-        }
-
-class ClassificationResult(BaseModel, IClassificationResult):
-    id: str
-    threadId: str
-    importance: str
-    label: str
-    reason: str
-
-class SendEmailRequest(BaseModel, ISendEmailRequest):
-    to: str
-    subject: str
-    content: str
-    thread_id: str = None
-
 def verify_google_token(access_token: str) -> bool:
     """Verify Google OAuth token"""
     try:
@@ -45,13 +18,9 @@ def verify_google_token(access_token: str) -> bool:
         return response.status_code == 200
     except:
         return False
-    to: str
-    subject: str
-    content: str
-    thread_id: str = None
 
-@router.post("/classify", response_model=ClassificationResult)
-def classify_email(email: EmailPayload):
+@router.post("/classify", response_model=IClassificationResult)
+def classify_email(email: IEmailPayload):
     """
     OpenAI Assistant will be called here later
     Currently - stub for testing
@@ -61,7 +30,7 @@ def classify_email(email: EmailPayload):
     text = f"{email.subject} {email.snippet}".lower()
     
     if "invoice" in text or "payment" in text or "overdue" in text:
-        return ClassificationResult(
+        return IClassificationResult(
             id=email.id,
             threadId=email.threadId,
             importance="high",
@@ -69,7 +38,7 @@ def classify_email(email: EmailPayload):
             reason="Payment related email"
         )
     
-    return ClassificationResult(
+    return IClassificationResult(
         id=email.id,
         threadId=email.threadId,
         importance="medium",
@@ -78,7 +47,7 @@ def classify_email(email: EmailPayload):
     )
 
 @router.post("/send")
-def send_email_to_assistant(request: SendEmailRequest, authorization: str = Header(None), token: str = None):
+def send_email_to_assistant(request: ISendEmailRequest, authorization: str = Header(None), token: str = None):
     """
     Send email to OpenAI Assistant (requires Google OAuth token verification)
     """
