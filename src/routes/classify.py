@@ -1,3 +1,5 @@
+import os
+import openai
 from fastapi import APIRouter
 from pydantic import BaseModel
 from ..interfaces.emails import IEmailData
