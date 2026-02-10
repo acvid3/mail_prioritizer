@@ -1,7 +1,6 @@
 import os
-import requests
-from fastapi import FastAPI, Request, HTTPException, Header
-from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 from dotenv import load_dotenv
 
 from src.routes import oauth_router, emails_router, classify_router
@@ -10,21 +9,35 @@ load_dotenv()
 
 app = FastAPI()
 
-CLIENT_ID = os.getenv("GMAIL_CLIENT_ID")
-CLIENT_SECRET = os.getenv("GMAIL_CLIENT_SECRET")
-REDIRECT_URI = "https://echo9.online/rest/oauth2-credential/callback"
-
-AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
-TOKEN_URL = "https://oauth2.googleapis.com/token"
-GMAIL_API_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messages"
-
-SCOPES = [
-    "openid",
-    "email",
-    "profile",
-    "https://www.googleapis.com/auth/gmail.readonly",
-    "https://www.googleapis.com/auth/gmail.send"
-]
+@app.get("/")
+def root():
+    html_content = """<!DOCTYPE html>
+<html>
+<head>
+    <title>Gmail OAuth API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .email { border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 5px; }
+        .subject { font-weight: bold; color: #333; }
+        .from { color: #666; font-size: 0.9em; }
+        .date { color: #999; font-size: 0.8em; }
+        .snippet { margin-top: 10px; color: #555; line-height: 1.4; }
+        .content { margin-top: 10px; padding: 10px; background: #f9f9f9; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>Gmail OAuth API</h1>
+    <a href="/rest/oauth2-credential/login">Login with Google</a>
+    <br><br>
+    <h3>Get Emails:</h3>
+    <p>Use Authorization header: <code>Authorization: Bearer YOUR_ACCESS_TOKEN</code></p>
+    <p>Example: <code>curl -H "Authorization: Bearer ya29..." https://echo9.online/emails</code></p>
+    <br><br>
+    <h3>Test with token:</h3>
+    <p><a href="/emails?token=ya29.a0AUMWg_KZdifKr3TZPUV5KghdY7WTZsd2ocpZYXmFfBNkuub33Ey0RUz6s9zLv5vcUAbvc4TLVIeZ2WdmNIGfHGBo0m_rGaT5ihJhB_h2cFADTGB-nuz4zeDVaplSehZZdxZ3VwJG6qNWVU_gXHZG5OQi9ur0m6WB2H_XhvTaxntMqigEbjbbo2zMyecIsolUn5akYN0aCgYKARUSARMSFQHGX2Mi7E8vQASqqVcqwp0x7wTIpw0206">Click to test with token</a></p>
+</body>
+</html>"""
+    return HTMLResponse(content=html_content, media_type="text/html")
 
 # Include routers
 app.include_router(oauth_router, prefix="/rest/oauth2-credential", tags=["oauth"])
