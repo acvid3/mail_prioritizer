@@ -1,6 +1,7 @@
 import os
 import requests
 from dotenv import load_dotenv
+from typing import Protocol
 
 load_dotenv()
 
@@ -15,7 +16,7 @@ class GmailOAuth:
         
         self.SCOPES = [
             "openid",
-            "email", 
+            "email",
             "profile",
             "https://www.googleapis.com/auth/gmail.readonly",
             "https://www.googleapis.com/auth/gmail.send"
@@ -32,7 +33,9 @@ class GmailOAuth:
             "prompt": "consent"
         }
         
-        return requests.Request("GET", self.AUTH_URL, params=params).prepare().url
+        import requests
+        url = requests.Request("GET", self.AUTH_URL, params=params).prepare().url
+        return url
     
     def exchange_code_for_token(self, code: str) -> dict:
         """Exchange authorization code for access token"""
@@ -44,5 +47,6 @@ class GmailOAuth:
             "grant_type": "authorization_code"
         }
         
+        import requests
         response = requests.post(self.TOKEN_URL, data=data)
         return response.json()
