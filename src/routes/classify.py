@@ -37,7 +37,7 @@ def classify_email(email: IEmailPayload, authorization: str = Header(None), toke
         message = client.beta.threads.messages.create(
             thread_id=thread.id,
             role="user",
-            content=f"Classify this email:\n\nFrom: {email.from_}\nSubject: {email.subject}\nDate: {email.date}\nSnippet: {email.snippet}\nContent: {email.content}"
+            content=f"Classify this email:\n\nFrom: {email.from_email}\nSubject: {email.subject}\nDate: {email.date}\nSnippet: {email.snippet}\nContent: {email.content}"
         )
         
         run = client.beta.threads.runs.create(

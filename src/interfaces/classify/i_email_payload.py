@@ -4,12 +4,7 @@ class IEmailPayload(BaseModel):
     id: str
     threadId: str
     subject: str
-    from_: str
+    from_email: str
     date: str
     snippet: str
     content: str
-
-    class Config:
-        fields = {
-            "from_": "from"
-        }
