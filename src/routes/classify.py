@@ -21,10 +21,6 @@ def verify_google_token(access_token: str) -> bool:
 
 @router.post("/classify", response_model=IClassificationResult)
 def classify_email(email: IEmailPayload):
-    """
-    OpenAI Assistant will be called here later
-    Currently - stub for testing
-    """
     
     # TEMP logic
     text = f"{email.subject} {email.snippet}".lower()
@@ -48,10 +44,6 @@ def classify_email(email: IEmailPayload):
 
 @router.post("/send")
 def send_email_to_assistant(request: ISendEmailRequest, authorization: str = Header(None), token: str = None):
-    """
-    Send email to OpenAI Assistant (requires Google OAuth token verification)
-    """
-    # Verify Google token
     access_token = None
     if authorization and authorization.startswith("Bearer "):
         access_token = authorization.split(" ")[1]
@@ -66,20 +58,17 @@ def send_email_to_assistant(request: ISendEmailRequest, authorization: str = Hea
     try:
         client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         
-        # Create thread or use existing
         if request.thread_id:
             thread = client.beta.threads.retrieve(request.thread_id)
         else:
             thread = client.beta.threads.create()
         
-        # Add message to thread
         message = client.beta.threads.messages.create(
             thread_id=thread.id,
             role="user",
             content=f"Email from: {request.to}\nSubject: {request.subject}\n\n{request.content}"
         )
         
-        # Run assistant
         run = client.beta.threads.runs.create(
             thread_id=thread.id,
             assistant_id=os.getenv("OPENAI_ASSISTANT_ID")

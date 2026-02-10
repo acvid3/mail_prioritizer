@@ -1,4 +1,6 @@
-class IEmailPayload:
+from pydantic import BaseModel
+
+class IEmailPayload(BaseModel):
     id: str
     threadId: str
     subject: str
@@ -6,3 +8,8 @@ class IEmailPayload:
     date: str
     snippet: str
     content: str
+
+    class Config:
+        fields = {
+            "from_": "from"
+        }

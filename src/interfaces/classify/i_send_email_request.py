@@ -1,4 +1,6 @@
-class ISendEmailRequest:
+from pydantic import BaseModel
+
+class ISendEmailRequest(BaseModel):
     to: str
     subject: str
     content: str
