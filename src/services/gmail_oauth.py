@@ -2,8 +2,6 @@ import os
 import requests
 from dotenv import load_dotenv
 
-from ..interfaces import IAuthRequest, IAuthResponse
-
 load_dotenv()
 
 class GmailOAuth:
