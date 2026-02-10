@@ -61,7 +61,7 @@ def get_emails(request: Request, authorization: str = Header(None), max_results:
                     snippet = msg_detail.get('snippet', '')
                     
                     # Get full text
-                    full_content = get_message_content(msg['id'], headers, GMAIL_API_URL)
+                    full_content = get_message_content(msg['id'], headers)
                     
                     result.append({
                         "id": msg['id'],
