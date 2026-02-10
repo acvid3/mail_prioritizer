@@ -102,3 +102,4 @@ python -m pytest tests/
 ## License
 
 MIT License
+# mail_prioritizer
