@@ -112,14 +112,21 @@ def google_callback(code: str):
 
 @app.get("/emails")
 def get_emails(request: Request, authorization: str = Header(None), max_results: int = 10, token: str = None):
+    print(f"=== Request headers: {dict(request.headers)} ===")
+    print(f"=== Authorization header: {authorization} ===")
+    print(f"=== Token param: {token} ===")
+    
     # Try to get token from multiple sources
     access_token = None
     
     if authorization and authorization.startswith("Bearer "):
         access_token = authorization.split(" ")[1]
+        print(f"=== Using token from Authorization header ===")
     elif token:
         access_token = token
+        print(f"=== Using token from query parameter ===")
     else:
+        print(f"=== No token found ===")
         raise HTTPException(status_code=401, detail="Authorization header required. Use: Authorization: Bearer YOUR_ACCESS_TOKEN")
     
     headers = {
