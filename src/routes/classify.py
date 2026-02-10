@@ -3,11 +3,11 @@ import openai
 import requests
 from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
-from ..interfaces.emails import IEmailData
+from ..interfaces.classify import IEmailPayload, IClassificationResult, ISendEmailRequest
 
 router = APIRouter()
 
-class EmailPayload(BaseModel):
+class EmailPayload(BaseModel, IEmailPayload):
     id: str
     threadId: str
     subject: str
@@ -21,14 +21,14 @@ class EmailPayload(BaseModel):
             "from_": "from"
         }
 
-class ClassificationResult(BaseModel):
+class ClassificationResult(BaseModel, IClassificationResult):
     id: str
     threadId: str
     importance: str
     label: str
     reason: str
 
-class SendEmailRequest(BaseModel):
+class SendEmailRequest(BaseModel, ISendEmailRequest):
     to: str
     subject: str
     content: str
