@@ -2,8 +2,9 @@ import os
 import requests
 from fastapi import FastAPI, Request, HTTPException, Header
 from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse
-from pydantic import BaseModel
 from dotenv import load_dotenv
+
+from src.routes import oauth_router, emails_router, classify_router
 
 load_dotenv()
 
@@ -24,27 +25,6 @@ SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/gmail.send"
 ]
-
-class EmailPayload(BaseModel):
-    id: str
-    threadId: str
-    subject: str
-    from_: str
-    date: str
-    snippet: str
-    content: str
-
-    class Config:
-        fields = {
-            "from_": "from"
-        }
-
-class ClassificationResult(BaseModel):
-    id: str
-    threadId: str
-    importance: str
-    label: str
-    reason: str
 
 def get_message_content(message_id: str, headers: dict):
     """Get full email content"""
@@ -219,32 +199,10 @@ def get_emails(request: Request, authorization: str = Header(None), max_results:
 def docs():
     return HTMLResponse(content="<h1>Gmail OAuth API</h1><p>Use /rest/oauth2-credential/login to start OAuth flow</p>", media_type="text/html")
 
-@app.post("/classify", response_model=ClassificationResult)
-def classify_email(email: EmailPayload):
-    """
-    OpenAI Assistant will be called here later
-    Currently - stub for testing
-    """
-    
-    # TEMP logic
-    text = f"{email.subject} {email.snippet}".lower()
-    
-    if "invoice" in text or "payment" in text or "overdue" in text:
-        return ClassificationResult(
-            id=email.id,
-            threadId=email.threadId,
-            importance="high",
-            label="AI_URGENT",
-            reason="Payment related email"
-        )
-    
-    return ClassificationResult(
-        id=email.id,
-        threadId=email.threadId,
-        importance="medium",
-        label="AI_IMPORTANT",
-        reason="Service related email"
-    )
+# Include routers
+app.include_router(oauth_router, prefix="/rest/oauth2-credential", tags=["oauth"])
+app.include_router(emails_router, tags=["emails"])
+app.include_router(classify_router, tags=["classify"])
 
 if __name__ == "__main__":
     import uvicorn
