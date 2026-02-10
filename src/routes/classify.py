@@ -1,6 +1,7 @@
 import os
 import openai
-from fastapi import APIRouter
+import requests
+from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
 from ..interfaces.emails import IEmailData
 
@@ -28,6 +29,22 @@ class ClassificationResult(BaseModel):
     reason: str
 
 class SendEmailRequest(BaseModel):
+    to: str
+    subject: str
+    content: str
+    thread_id: str = None
+
+def verify_google_token(access_token: str) -> bool:
+    """Verify Google OAuth token"""
+    try:
+        # Get user info from Google API
+        response = requests.get(
+            "https://www.googleapis.com/oauth2/v1/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        return response.status_code == 200
+    except:
+        return False
     to: str
     subject: str
     content: str
@@ -61,11 +78,21 @@ def classify_email(email: EmailPayload):
     )
 
 @router.post("/send")
-def send_email_to_assistant(request: SendEmailRequest):
+def send_email_to_assistant(request: SendEmailRequest, authorization: str = Header(None), token: str = None):
     """
-    Send email to OpenAI Assistant
+    Send email to OpenAI Assistant (requires Google OAuth token verification)
     """
-    import openai
+    # Verify Google token
+    access_token = None
+    if authorization and authorization.startswith("Bearer "):
+        access_token = authorization.split(" ")[1]
+    elif token:
+        access_token = token
+    else:
+        raise HTTPException(status_code=401, detail="Authorization required. Use: Authorization: Bearer YOUR_ACCESS_TOKEN or ?token=YOUR_ACCESS_TOKEN")
+    
+    if not verify_google_token(access_token):
+        raise HTTPException(status_code=401, detail="Invalid Google OAuth token")
     
     try:
         client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
