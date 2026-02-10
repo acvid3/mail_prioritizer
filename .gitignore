@@ -1,0 +1,45 @@
+# Tests
+tests/
+test_*.py
+*_test.py
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Credentials
+config/credentials.json
+config/token.json
+
+# Logs
+logs/
+*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# Node modules (if using ngrok or other tools)
+node_modules/
