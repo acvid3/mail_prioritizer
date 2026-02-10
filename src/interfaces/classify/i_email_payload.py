@@ -1,6 +1,4 @@
-from typing import Protocol
-
-class IEmailPayload(Protocol):
+class IEmailPayload:
     id: str
     threadId: str
     subject: str

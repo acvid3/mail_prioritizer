@@ -1,6 +1,4 @@
-from typing import Protocol
-
-class IClassificationResult(Protocol):
+class IClassificationResult:
     id: str
     threadId: str
     importance: str

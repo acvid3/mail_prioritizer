@@ -1,6 +1,4 @@
-from typing import Protocol
-
-class ISendEmailRequest(Protocol):
+class ISendEmailRequest:
     to: str
     subject: str
     content: str
