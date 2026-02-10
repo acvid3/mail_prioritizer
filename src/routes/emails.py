@@ -1,10 +1,7 @@
 from fastapi import APIRouter, Request, HTTPException, Header
 from fastapi.responses import JSONResponse
 
-from ..services import GmailAPI
-
 router = APIRouter()
-gmail = GmailAPI()
 
 @router.get("/emails")
 def get_emails(request: Request, authorization: str = Header(None), max_results: int = 10, token: str = None):
@@ -22,16 +19,93 @@ def get_emails(request: Request, authorization: str = Header(None), max_results:
         "Accept": "application/json"
     }
     
+    import os
+    import requests
+    import base64
+    
+    GMAIL_API_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messages"
+    
     try:
-        result = gmail.get_messages_list(headers, max_results)
+        params = {
+            "maxResults": max_results,
+            "format": "metadata"
+        }
         
-        if result["success"]:
-            return JSONResponse(result)
+        response = requests.get(GMAIL_API_URL, headers=headers, params=params)
+        
+        if response.status_code == 200:
+            data = response.json()
+            messages = data.get("messages", [])
+            
+            result = []
+            for msg in messages:
+                detail_response = requests.get(f"{GMAIL_API_URL}/{msg['id']}", headers=headers, params={"format": "full"})
+                if detail_response.status_code == 200:
+                    msg_detail = detail_response.json()
+                    payload = msg_detail.get('payload', {})
+                    headers_list = payload.get('headers', [])
+                    
+                    subject = next((h['value'] for h in headers_list if h['name'] == 'Subject'), 'No Subject')
+                    from_email = next((h['value'] for h in headers_list if h['name'] == 'From'), 'Unknown')
+                    date = next((h['value'] for h in headers_list if h['name'] == 'Date'), 'Unknown')
+                    snippet = msg_detail.get('snippet', '')
+                    
+                    full_content = get_message_content(msg['id'], headers)
+                    
+                    result.append({
+                        "id": msg['id'],
+                        "threadId": msg['threadId'],
+                        "subject": subject,
+                        "from": from_email,
+                        "date": date,
+                        "snippet": snippet,
+                        "content": full_content
+                    })
+            
+            return JSONResponse({
+                "success": True,
+                "count": len(result),
+                "emails": result
+            })
         else:
-            return JSONResponse(result, status_code=400)
+            return JSONResponse({
+                "success": False,
+                "error": f"Gmail API error: {response.status_code}",
+                "details": response.text
+            }, status_code=response.status_code)
             
     except Exception as e:
         return JSONResponse({
             "success": False,
             "error": str(e)
         }, status_code=500)
+
+def get_message_content(message_id: str, headers: dict):
+    import requests
+    import base64
+    
+    GMAIL_API_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messages"
+    
+    response = requests.get(f"{GMAIL_API_URL}/{message_id}", headers=headers, params={"format": "full"})
+    if response.status_code == 200:
+        msg = response.json()
+        payload = msg.get('payload', {})
+        
+        text_content = ""
+        if 'parts' in payload:
+            for part in payload['parts']:
+                if part.get('mimeType') == 'text/plain':
+                    data = part.get('body', {}).get('data', '')
+                    if data:
+                        try:
+                            text_content += base64.urlsafe_b64decode(data).decode('utf-8')
+                        except:
+                            pass
+        elif 'body' in payload and payload['body'].get('data'):
+            try:
+                text_content = base64.urlsafe_b64decode(payload['body']['data']).decode('utf-8')
+            except:
+                text_content = msg.get('snippet', '')
+        
+        return text_content[:500]
+    return ""
