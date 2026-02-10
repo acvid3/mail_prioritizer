@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI
 from dotenv import load_dotenv
 
-from src.routes import oauth_router, emails_router, classify_router
+from src.routes import oauth_router, emails_router, classify_router, labels_router
 
 load_dotenv()
 
@@ -12,6 +12,7 @@ app = FastAPI()
 app.include_router(oauth_router, prefix="/rest/oauth2-credential", tags=["oauth"])
 app.include_router(emails_router, tags=["emails"])
 app.include_router(classify_router, tags=["classify"])
+app.include_router(labels_router, tags=["labels"])
 
 if __name__ == "__main__":
     import uvicorn
