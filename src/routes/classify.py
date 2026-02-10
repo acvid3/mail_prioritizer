@@ -2,15 +2,12 @@ import os
 import openai
 import requests
 from fastapi import APIRouter, HTTPException, Header
-from pydantic import BaseModel
 from ..interfaces.classify import IEmailPayload, IClassificationResult, ISendEmailRequest
 
 router = APIRouter()
 
 def verify_google_token(access_token: str) -> bool:
-    """Verify Google OAuth token"""
     try:
-        # Get user info from Google API
         response = requests.get(
             "https://www.googleapis.com/oauth2/v1/userinfo",
             headers={"Authorization": f"Bearer {access_token}"}
@@ -20,27 +17,107 @@ def verify_google_token(access_token: str) -> bool:
         return False
 
 @router.post("/classify", response_model=IClassificationResult)
-def classify_email(email: IEmailPayload):
+def classify_email(email: IEmailPayload, authorization: str = Header(None), token: str = None):
+    """
+    Classify email using OpenAI Assistant (requires Google OAuth token verification)
+    """
+    # Verify Google token
+    access_token = None
+    if authorization and authorization.startswith("Bearer "):
+        access_token = authorization.split(" ")[1]
+    elif token:
+        access_token = token
+    else:
+        raise HTTPException(status_code=401, detail="Authorization required. Use: Authorization: Bearer YOUR_ACCESS_TOKEN or ?token=YOUR_ACCESS_TOKEN")
     
-    # TEMP logic
-    text = f"{email.subject} {email.snippet}".lower()
+    if not verify_google_token(access_token):
+        raise HTTPException(status_code=401, detail="Invalid Google OAuth token")
     
-    if "invoice" in text or "payment" in text or "overdue" in text:
+    try:
+        client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        
+        # Create thread
+        thread = client.beta.threads.create()
+        
+        # Add email to thread
+        message = client.beta.threads.messages.create(
+            thread_id=thread.id,
+            role="user",
+            content=f"Classify this email:\n\nFrom: {email.from_}\nSubject: {email.subject}\nDate: {email.date}\nSnippet: {email.snippet}\nContent: {email.content}"
+        )
+        
+        # Run assistant
+        run = client.beta.threads.runs.create(
+            thread_id=thread.id,
+            assistant_id=os.getenv("OPENAI_ASSISTANT_ID")
+        )
+        
+        # Wait for completion
+        import time
+        while True:
+            run_status = client.beta.threads.runs.retrieve(
+                thread_id=thread.id,
+                run_id=run.id
+            )
+            if run_status.status == "completed":
+                break
+            elif run_status.status == "failed":
+                raise Exception("Assistant run failed")
+            time.sleep(1)
+        
+        # Get messages
+        messages = client.beta.threads.messages.list(
+            thread_id=thread.id
+        )
+        
+        # Extract function call result
+        for msg in messages.data:
+            if msg.role == "assistant":
+                for content in msg.content:
+                    if content.type == "text":
+                        # Parse the function call result from text
+                        import json
+                        try:
+                            result = json.loads(content.text)
+                            return IClassificationResult(
+                                id=email.id,
+                                threadId=email.threadId,
+                                importance=result.get("importance", "medium"),
+                                label=result.get("label", "AI_IMPORTANT"),
+                                reason=result.get("reason", "AI classified email")
+                            )
+                        except:
+                            pass
+        
+        # Fallback if no function call found
         return IClassificationResult(
             id=email.id,
             threadId=email.threadId,
-            importance="high",
-            label="AI_URGENT",
-            reason="Payment related email"
+            importance="medium",
+            label="AI_IMPORTANT",
+            reason="AI classification completed"
         )
-    
-    return IClassificationResult(
-        id=email.id,
-        threadId=email.threadId,
-        importance="medium",
-        label="AI_IMPORTANT",
-        reason="Service related email"
-    )
+        
+    except Exception as e:
+        # Fallback to simple logic if OpenAI fails
+        text = f"{email.subject} {email.snippet}".lower()
+        
+        if "invoice" in text or "payment" in text or "overdue" in text:
+            return IClassificationResult(
+                id=email.id,
+                threadId=email.threadId,
+                importance="high",
+                label="AI_URGENT",
+                reason="Payment related email (fallback)"
+            )
+        
+        return IClassificationResult(
+            id=email.id,
+            threadId=email.threadId,
+            importance="medium",
+            label="AI_IMPORTANT",
+            reason="Service related email (fallback)"
+        )
 
 @router.post("/send")
 def send_email_to_assistant(request: ISendEmailRequest, authorization: str = Header(None), token: str = None):
