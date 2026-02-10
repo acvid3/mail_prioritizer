@@ -21,14 +21,15 @@ def root():
 </head>
 <body>
     <h1>Gmail OAuth API</h1>
-    <a href="/rest/oauth2-credential/login">Login with Google</a>
-    <br><br>
-    <h3>Get Emails:</h3>
-    <p>Use Authorization header: <code>Authorization: Bearer YOUR_ACCESS_TOKEN</code></p>
-    <p>Example: <code>curl -H "Authorization: Bearer ya29..." https://echo9.online/emails</code></p>
-    <br><br>
-    <h3>Test with token:</h3>
-    <p><a href="/emails?token=ya29.a0AUMWg_KZdifKr3TZPUV5KghdY7WTZsd2ocpZYXmFfBNkuub33Ey0RUz6s9zLv5vcUAbvc4TLVIeZ2WdmNIGfHGBo0m_rGaT5ihJhB_h2cFADTGB-nuz4zeDVaplSehZZdxZ3VwJG6qNWVU_gXHZG5OQi9ur0m6WB2H_XhvTaxntMqigEbjbbo2zMyecIsolUn5akYN0aCgYKARUSARMSFQHGX2Mi7E8vQASqqVcqwp0x7wTIpw0206">Click to test with token</a></p>
+    <p>API is running. Use the following endpoints:</p>
+    <ul>
+        <li><strong>OAuth Login:</strong> <code>GET /rest/oauth2-credential/login</code></li>
+        <li><strong>OAuth Callback:</strong> <code>GET /rest/oauth2-credential/callback</code></li>
+        <li><strong>Get Emails:</strong> <code>GET /emails</code></li>
+        <li><strong>Classify Email:</strong> <code>POST /classify</code></li>
+    </ul>
+    <h3>API Documentation:</h3>
+    <p>Use <code>Authorization: Bearer YOUR_ACCESS_TOKEN</code> header for protected endpoints</p>
 </body>
 </html>"""
     return HTMLResponse(content=html_content, media_type="text/html")
