@@ -11,3 +11,8 @@ oauth = GmailOAuth()
 def google_login():
     url = oauth.get_auth_url()
     return RedirectResponse(url)
+
+@router.get("/callback")
+def google_callback(code: str):
+    token_data = oauth.exchange_code_for_token(code)
+    return JSONResponse(token_data)
