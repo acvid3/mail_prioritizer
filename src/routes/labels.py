@@ -50,6 +50,46 @@ def get_or_create_label(access_token: str, label_name: str) -> str:
     else:
         raise Exception(f"Failed to create label: {response.text}")
 
+@router.get("/labels")
+def get_labels(authorization: str = Header(None), token: str = None):
+    access_token = None
+    if authorization and authorization.startswith("Bearer "):
+        access_token = authorization.split(" ")[1]
+    elif token:
+        access_token = token
+    else:
+        raise HTTPException(status_code=401, detail="Authorization required")
+    
+    if not verify_google_token(access_token):
+        raise HTTPException(status_code=401, detail="Invalid Google OAuth token")
+    
+    try:
+        gmail_api_url = "https://gmail.googleapis.com/gmail/v1/users/me/labels"
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Accept": "application/json"
+        }
+        
+        response = requests.get(gmail_api_url, headers=headers)
+        if response.status_code == 200:
+            labels = response.json().get("labels", [])
+            return {
+                "success": True,
+                "count": len(labels),
+                "labels": labels
+            }
+        else:
+            return {
+                "success": False,
+                "error": f"Failed to fetch labels: {response.text}"
+            }
+    
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
 @router.post("/labels/create")
 def create_label(request: CreateLabelRequest, authorization: str = Header(None), token: str = None):
     access_token = None
